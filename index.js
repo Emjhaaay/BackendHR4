@@ -14,7 +14,7 @@ require('dotenv').config(); // Import dotenv to read .env file
 const app = express();
 app.use(express.json());
 app.use(cors());
-
+app.get("/", (req, res) => res.send("Express on Vercel"));
 mongoose.connect(process.env.MONGODB_URL); // Use environment variable for MongoDB URI
 
 const JWT_SECRET = process.env.JWT_SECRET; // Use environment variable for JWT secret
