@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const EmployeeModel = require("./model/Employee");
+const multer = require('multer');
 const overtimeRoutes = require("./routes/overtimeRoutes");
 const leaveRoutes = require('./routes/leaveRoutes');
 const benefitsRoutes = require("./routes/benefitsRoutes");
@@ -14,11 +15,12 @@ require('dotenv').config(); // Import dotenv to read .env file
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use('/uploads', express.static('uploads'));
 app.get("/", (req, res) => res.send("Hello Backend"));
 mongoose.connect(process.env.MONGODB_URL); // Use environment variable for MongoDB URI
 
 const JWT_SECRET = process.env.JWT_SECRET; // Use environment variable for JWT secret
-const PORT = process.env.PORT || 8055; // Use environment variable for port
+const PORT = process.env.PORT || 8059; // Use environment variable for port
 
 // Middleware 
 const authenticateJWT = (req, res, next) => {
