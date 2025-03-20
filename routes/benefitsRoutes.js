@@ -15,16 +15,17 @@ router.get('/', async (req, res) => {
 
 // Create a new benefit entry
 router.post('/', async (req, res) => {
-  const { employeeName, employeePosition, sss, pagIbig, philHealth, leave, thirteenthMonth } = req.body;
+  const { employeeName, employeePosition, sss, hazardPay, holidayIncentives, leave, thirteenthMonth, retirement } = req.body; // Updated variable names
 
   const newBenefit = new Benefits({
     employeeName,
     employeePosition,
     sss,
-    pagIbig,
-    philHealth,
+    hazardPay, // Updated
+    holidayIncentives, // Updated
     leave,
     thirteenthMonth,
+    retirement, // Include retirement in the new benefit
   });
 
   try {
@@ -37,12 +38,12 @@ router.post('/', async (req, res) => {
 
 // Update a benefit entry
 router.put('/:id', async (req, res) => {
-  const { employeeName, employeePosition, sss, pagIbig, philHealth, leave, thirteenthMonth } = req.body;
+  const { employeeName, employeePosition, sss, hazardPay, holidayIncentives, leave, thirteenthMonth, retirement } = req.body; // Updated variable names
 
   try {
     const updatedBenefit = await Benefits.findByIdAndUpdate(
       req.params.id,
-      { employeeName, employeePosition, sss, pagIbig, philHealth, leave, thirteenthMonth },
+      { employeeName, employeePosition, sss, hazardPay, holidayIncentives, leave, thirteenthMonth, retirement }, // Updated
       { new: true }
     );
     res.json(updatedBenefit);

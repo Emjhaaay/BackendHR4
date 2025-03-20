@@ -7,6 +7,8 @@ const overtimeSchema = new mongoose.Schema(
     baseSalary: { type: Number, required: true },
     overtimeHours: { type: Number, required: true },
     totalSalary: { type: Number, required: true },
+    predictedSalary: { type: Number, required: true },
+    predictedOvertimeHours: { type: Number, required: true },
   },
   { timestamps: true }
 );

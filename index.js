@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const bodyParser = require('body-parser');
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const EmployeeModel = require("./model/Employee");
@@ -15,6 +16,7 @@ require('dotenv').config(); // Import dotenv to read .env file
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(bodyParser.json()); 
 app.use('/uploads', express.static('uploads'));
 app.get("/", (req, res) => res.send("Hello Backend"));
 mongoose.connect(process.env.MONGODB_URL); // Use environment variable for MongoDB URI

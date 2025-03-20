@@ -3,6 +3,21 @@ const Overtime = require("../model/Overtime");
 
 const router = express.Router();
 
+// Function to calculate predicted salary
+const calculatePredictedSalary = (totalSalary, overtimeHours) => {
+  const increasePercentage = 0.05; // Example: 5% increase
+  if (overtimeHours === 0) {
+    return totalSalary; // If no overtime, predicted salary is the same as total salary
+  }
+  return totalSalary * (1 + increasePercentage); // Apply increase if there are overtime hours
+};
+
+// Function to calculate predicted overtime hours
+const calculatePredictedOvertimeHours = (currentOvertimeHours) => {
+  const increasePercentage = 0.10; // Example: 10% increase
+  return Math.round(currentOvertimeHours * (1 + increasePercentage)); // Round the predicted overtime hours
+};
+
 // Get all overtime records
 router.get("/", async (req, res) => {
   try {
@@ -17,7 +32,16 @@ router.get("/", async (req, res) => {
 
 // Add a new overtime record
 router.post("/", async (req, res) => {
-  const { name, position, baseSalary, overtimeHours, totalSalary } = req.body; // Added employeeId
+  const { name, position, baseSalary, overtimeHours, totalSalary } = req.body;
+
+  // Manual validation
+  if (!name || !position || !baseSalary || !overtimeHours || !totalSalary) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  // Calculate predicted salary and predicted overtime hours
+  const predictedSalary = calculatePredictedSalary(totalSalary, overtimeHours);
+  const predictedOvertimeHours = calculatePredictedOvertimeHours(overtimeHours);
 
   const newOvertime = new Overtime({
     name,
@@ -25,7 +49,9 @@ router.post("/", async (req, res) => {
     baseSalary,
     overtimeHours,
     totalSalary,
-  }); // Included employeeId
+    predictedSalary, // Include predicted salary
+    predictedOvertimeHours, // Include predicted overtime hours
+  });
 
   try {
     const savedOvertime = await newOvertime.save();
@@ -40,7 +66,16 @@ router.post("/", async (req, res) => {
 // Update an existing overtime record
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, position, baseSalary, overtimeHours, totalSalary } = req.body; // Added employeeId
+  const { name, position, baseSalary, overtimeHours, totalSalary } = req.body;
+
+  // Manual validation
+  if (!name || !position || !baseSalary || !overtimeHours || !totalSalary) {
+    return res.status(400).json({ message: "All fields are required." });
+  }
+
+  // Calculate predicted salary and predicted overtime hours
+  const predictedSalary = calculatePredictedSalary(totalSalary, overtimeHours);
+  const predictedOvertimeHours = calculatePredictedOvertimeHours(overtimeHours);
 
   try {
     const updatedOvertime = await Overtime.findByIdAndUpdate(
@@ -51,6 +86,8 @@ router.put("/:id", async (req, res) => {
         baseSalary,
         overtimeHours,
         totalSalary,
+        predictedSalary, // Include predicted salary
+        predictedOvertimeHours, // Include predicted overtime hours
       },
       { new: true }
     );
