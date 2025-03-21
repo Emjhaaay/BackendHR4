@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "engines": {
-    "node": "22.x"
+    "node": "14.x"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -27,6 +27,7 @@
     "multer-s3": "^3.0.1",
     "nodemon": "^3.1.7",
     "path": "^0.12.7",
-    "validator": "^13.12.0"
+    "validator": "^13.12.0",
+    "vercel": "^41.4.1"
   }
 }
