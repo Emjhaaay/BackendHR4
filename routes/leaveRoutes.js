@@ -2,15 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Leave = require('../model/Leave');
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2; // Import Cloudinary
-const streamifier = require('streamifier'); // To handle streams for Cloudinary
-
-// Configure Cloudinary
-cloudinary.config({
-    cloud_name: 'dvkz5ee15', // Your Cloudinary cloud name
-    api_key: '359858671765997', // Your Cloudinary API key
-    api_secret: 'RlggJo2ntHT2HG4g20oilyoNF3k' // Your Cloudinary API secret
-});
 
 // Set up Multer for file uploads
 const storage = multer.memoryStorage(); // Store files in memory
@@ -19,30 +10,9 @@ const upload = multer({ storage });
 // Create a new leave request
 router.post('/', upload.single('attachment'), async (req, res) => {
     try {
-        let attachmentUrl = null;
-
-        // Upload to Cloudinary if a file is provided
-        if (req.file) {
-            const streamUpload = (file) => {
-                return new Promise((resolve, reject) => {
-                    const stream = cloudinary.uploader.upload_stream((error, result) => {
-                        if (result) {
-                            resolve(result);
-                        } else {
-                            reject(error);
-                        }
-                    });
-                    streamifier.createReadStream(file.buffer).pipe(stream);
-                });
-            };
-
-            const result = await streamUpload(req.file);
-            attachmentUrl = result.secure_url; // Get the URL of the uploaded file
-        }
-
         const newLeave = new Leave({
             ...req.body,
-            attachment: attachmentUrl, // Save the URL of the uploaded file
+            attachment: req.file ? req.file.originalname : null, // Save the original filename if provided
         });
         const savedLeave = await newLeave.save();
         res.status(201).json(savedLeave);
@@ -82,23 +52,9 @@ router.put('/:id', upload.single('attachment'), async (req, res) => {
             ...req.body,
         };
 
-        // Upload to Cloudinary if a new file is provided
+        // If a new file is provided, save the original filename
         if (req.file) {
-            const streamUpload = (file) => {
-                return new Promise((resolve, reject) => {
-                    const stream = cloudinary.uploader.upload_stream((error, result) => {
-                        if (result) {
-                            resolve(result);
-                        } else {
-                            reject(error);
-                        }
-                    });
-                    streamifier.createReadStream(file.buffer).pipe(stream);
-                });
-            };
-
-            const result = await streamUpload(req.file);
-            updatedData.attachment = result.secure_url; // Update the attachment URL
+            updatedData.attachment = req.file.originalname; // Update the attachment with the original filename
         }
 
         const updatedLeave = await Leave.findByIdAndUpdate(req.params.id, updatedData, { new: true });
@@ -116,29 +72,11 @@ router.delete('/:id', async (req, res) => {
         const leave = await Leave.findById(req.params.id);
         if (!leave) return res.status(404).json({ message: 'Leave not found' });
 
-        // If there's an attachment, delete it from Cloudinary
-        if (leave.attachment) {
-            const publicId = leave.attachment.split('/').pop().split('.')[0]; // Extract public ID from URL
-            await cloudinary.uploader.destroy(publicId); // Delete from Cloudinary
-        }
-
         const deletedLeave = await Leave.findByIdAndDelete(req.params.id);
         res.json({ message: 'Leave deleted successfully' });
     } catch (error) {
         console.error('Error deleting leave request:', error);
         res.status(500).json({ message: error.message });
-    }
-});
-
-// Optional: Additional route to handle file deletion (not needed if using Cloudinary)
-router.delete('/attachment/:filename', async (req, res) => {
-    const publicId = req.params.filename.split('.')[0]; // Extract public ID from filename
-    try {
-        await cloudinary.uploader.destroy(publicId); // Delete from Cloudinary
-        res.json({ message: 'File deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting file:', error);
-        res.status(500).json({ message: 'Error deleting file', error: err });
     }
 });
 
