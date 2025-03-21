@@ -5,17 +5,26 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// Ensure the uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Set up Multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Directory to save uploaded files
+        cb(null, uploadsDir); // Directory to save uploaded files
     },
     filename: (req, file, cb) => {
         cb(null, Date.now() + path.extname(file.originalname)); // Append timestamp to filename
     },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10 MB
+});
 
 // Create a new leave request
 router.post('/', upload.single('attachment'), async (req, res) => {
@@ -27,6 +36,7 @@ router.post('/', upload.single('attachment'), async (req, res) => {
         const savedLeave = await newLeave.save();
         res.status(201).json(savedLeave);
     } catch (error) {
+        console.error('Error creating leave request:', error);
         res.status(400).json({ message: error.message });
     }
 });
@@ -37,6 +47,7 @@ router.get('/', async (req, res) => {
         const leaves = await Leave.find();
         res.json(leaves);
     } catch (error) {
+        console.error('Error fetching leave requests:', error);
         res.status(500).json({ message: error.message });
     }
 });
@@ -48,6 +59,7 @@ router.get('/:id', async (req, res) => {
         if (!leave) return res.status(404).json({ message: 'Leave not found' });
         res.json(leave);
     } catch (error) {
+        console.error('Error fetching leave request:', error);
         res.status(500).json({ message: error.message });
     }
 });
@@ -64,6 +76,7 @@ router.put('/:id', upload.single('attachment'), async (req, res) => {
         if (!updatedLeave) return res.status(404).json({ message: 'Leave not found' });
         res.json(updatedLeave);
     } catch (error) {
+        console.error('Error updating leave request:', error);
         res.status(400).json({ message: error.message });
     }
 });
@@ -75,15 +88,17 @@ router.delete('/:id', async (req, res) => {
         if (!deletedLeave) return res.status(404).json({ message: 'Leave not found' });
         res.json({ message: 'Leave deleted successfully' });
     } catch (error) {
+        console.error('Error deleting leave request:', error);
         res.status(500).json({ message: error.message });
     }
 });
 
 // Additional route to handle file deletion (optional)
 router.delete('/attachment/:filename', async (req, res) => {
-    const filePath = path.join(__dirname, '../uploads', req.params.filename);
+    const filePath = path.join(uploadsDir, req.params.filename);
     fs.unlink(filePath, (err) => {
         if (err) {
+            console.error('Error deleting file:', err);
             return res.status(500).json({ message: 'Error deleting file', error: err });
         }
         res.json({ message: 'File deleted successfully' });
