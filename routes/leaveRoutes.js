@@ -11,7 +11,7 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Set up Multer for file uploads
+// Set up Multer for file uploads with file type validation
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadsDir); // Directory to save uploaded files
@@ -21,9 +21,20 @@ const storage = multer.diskStorage({
     },
 });
 
+const fileFilter = (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|gif|pdf/; // Allowed file types
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    if (mimetype && extname) {
+        return cb(null, true);
+    }
+    cb(new Error('Error: File type not supported!'));
+};
+
 const upload = multer({
     storage,
     limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10 MB
+    fileFilter, // Use the file filter
 });
 
 // Create a new leave request
@@ -81,11 +92,23 @@ router.put('/:id', upload.single('attachment'), async (req, res) => {
     }
 });
 
-// Delete a leave request
+// Delete a leave request and its associated file
 router.delete('/:id', async (req, res) => {
     try {
+        const leave = await Leave.findById(req.params.id);
+        if (!leave) return res.status(404).json({ message: 'Leave not found' });
+
+        // Delete the associated file if it exists
+        if (leave.attachment) {
+            const filePath = path.join(uploadsDir, leave.attachment);
+            fs.unlink(filePath, (err) => {
+                if (err) {
+                    console.error('Error deleting file:', err);
+                }
+            });
+        }
+
         const deletedLeave = await Leave.findByIdAndDelete(req.params.id);
-        if (!deletedLeave) return res.status(404).json({ message: 'Leave not found' });
         res.json({ message: 'Leave deleted successfully' });
     } catch (error) {
         console.error('Error deleting leave request:', error);
