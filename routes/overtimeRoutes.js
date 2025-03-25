@@ -1,125 +1,102 @@
 const express = require("express");
-const Overtime = require("../model/Overtime");
-
+const Shift = require("../model/Shift");
 const router = express.Router();
 
-// Function to calculate predicted salary
-const calculatePredictedSalary = (totalSalary, overtimeHours) => {
-  const increasePercentage = 0.05; // Example: 5% increase
-  if (overtimeHours === 0) {
-    return totalSalary; // If no overtime, predicted salary is the same as total salary
+// Function to generate a unique employee number
+const generateEmployeeNo = async () => {
+  const prefix = "NGH-";
+  const existingRecords = await Shift.find().sort({ employeeNo: -1 }).limit(1);
+  let nextNumber = 1;
+
+  if (existingRecords.length > 0) {
+    const lastEmployeeNo = existingRecords[0].employeeNo;
+    const lastNumber = parseInt(lastEmployeeNo.split("-")[1], 10);
+    nextNumber = lastNumber + 1;
   }
-  return totalSalary * (1 + increasePercentage); // Apply increase if there are overtime hours
+
+  return `${prefix}${nextNumber.toString().padStart(4, '0')}`; // Format as NGH-XXXX
 };
 
-// Function to calculate predicted overtime hours
-const calculatePredictedOvertimeHours = (currentOvertimeHours) => {
-  const increasePercentage = 0.10; // Example: 10% increase
-  return Math.round(currentOvertimeHours * (1 + increasePercentage)); // Round the predicted overtime hours
-};
-
-// Get all overtime records
+// Get all shifts
 router.get("/", async (req, res) => {
   try {
-    const overtimes = await Overtime.find();
-    res.json(overtimes);
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error fetching overtime records", error: err });
+    const shifts = await Shift.find();
+    res.json(shifts);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching shifts", error });
   }
 });
 
-// Add a new overtime record
+// Add a new shift
 router.post("/", async (req, res) => {
-  const { name, position, baseSalary, overtimeHours, totalSalary } = req.body;
+  const { employeeName, employeePosition, shiftType, timeRange, differentialRate, salary } = req.body;
 
   // Manual validation
-  if (!name || !position || !baseSalary || !overtimeHours || !totalSalary) {
+  if (!employeeName || !employeePosition || !shiftType || !timeRange || !differentialRate || !salary) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
-  // Calculate predicted salary and predicted overtime hours
-  const predictedSalary = calculatePredictedSalary(totalSalary, overtimeHours);
-  const predictedOvertimeHours = calculatePredictedOvertimeHours(overtimeHours);
-
-  const newOvertime = new Overtime({
-    name,
-    position,
-    baseSalary,
-    overtimeHours,
-    totalSalary,
-    predictedSalary, // Include predicted salary
-    predictedOvertimeHours, // Include predicted overtime hours
-  });
-
   try {
-    const savedOvertime = await newOvertime.save();
-    res.status(201).json(savedOvertime);
-  } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Error adding overtime record", error: err });
+    const employeeNo = await generateEmployeeNo(); // Generate employee number
+
+    const newShift = new Shift({
+      employeeNo, // Include employee number
+      employeeName,
+      employeePosition,
+      shiftType,
+      differentialRate,
+      salary,
+      timeRange
+    });
+
+    const savedShift = await newShift.save();
+    res.status(201).json(savedShift);
+  } catch (error) {
+    res.status(400).json({ message: "Error adding shift", error });
   }
 });
 
-// Update an existing overtime record
+// Update an existing shift
 router.put("/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, position, baseSalary, overtimeHours, totalSalary } = req.body;
+  const { employeeName, employeePosition, shiftType, differentialRate, salary, timeRange } = req.body;
 
   // Manual validation
-  if (!name || !position || !baseSalary || !overtimeHours || !totalSalary) {
+  if (!employeeName || !employeePosition || !shiftType || !timeRange || !differentialRate || !salary) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
-  // Calculate predicted salary and predicted overtime hours
-  const predictedSalary = calculatePredictedSalary(totalSalary, overtimeHours);
-  const predictedOvertimeHours = calculatePredictedOvertimeHours(overtimeHours);
-
   try {
-    const updatedOvertime = await Overtime.findByIdAndUpdate(
+    const updatedShift = await Shift.findByIdAndUpdate(
       id,
-      {
-        name,
-        position,
-        baseSalary,
-        overtimeHours,
-        totalSalary,
-        predictedSalary, // Include predicted salary
-        predictedOvertimeHours, // Include predicted overtime hours
-      },
+      { employeeName, employeePosition, shiftType, differentialRate, salary, timeRange },
       { new: true }
     );
 
-    if (!updatedOvertime) {
-      return res.status(404).json({ message: "Overtime record not found" });
+    if (!updatedShift) {
+      return res.status(404).json({ message: "Shift not found" });
     }
 
-    res.json(updatedOvertime);
-  } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Error updating overtime record", error: err });
+    res.json(updatedShift);
+  } catch (error) {
+    res.status(400).json({ message: "Error updating shift", error });
   }
 });
 
-// Delete an overtime record
+// Delete a shift
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const deletedOvertime = await Overtime.findByIdAndDelete(id);
+    const deletedShift = await Shift.findByIdAndDelete(id);
 
-    if (!deletedOvertime) {
-      return res.status(404).json({ message: "Overtime record not found" });
+    if (!deletedShift) {
+      return res.status(404).json({ message: "Shift not found" });
     }
 
-    res.json({ message: "Overtime record deleted successfully" });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error deleting overtime record", error: err });
+    res.json({ message: "Shift deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting shift", error });
   }
 });
 
